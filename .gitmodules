@@ -1,0 +1,3 @@
+[submodule "rffe_py"]
+	path = rffe_py
+	url = https://github.com/lnls-dig/rffe_py

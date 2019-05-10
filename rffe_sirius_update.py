@@ -32,7 +32,7 @@ def get_ssh_connection(ssh_machine, ssh_username, ssh_password):
     client.connect(hostname=ssh_machine, username=ssh_username, password=ssh_password, timeout=10)
     return client
 
-def run_sudo_command(ssh_username="root", ssh_password, ssh_machine, command):
+def run_sudo_command(ssh_username, ssh_password, ssh_machine, command):
     """Executes a command over a established SSH connection.
     :param ssh_machine: IP of the machine to which SSH connection to be established.
     :param ssh_username: User Name of the machine to which SSH connection to be established..

@@ -1,0 +1,6 @@
+#General temp files
+*~
+
+#Python compiled
+*.pyc
+*.pyo

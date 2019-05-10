@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import argparse
-from rffe_lib import RFFEControllerBoard
+from rffe_py.rffe_lib import RFFEControllerBoard
 import time
 import socket
 import paramiko

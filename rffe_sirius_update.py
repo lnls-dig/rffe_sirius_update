@@ -114,9 +114,9 @@ for cpu_ip in cpu_list:
 
     #Restart BPM IOC service
     run_sudo_command(user, pwd, cpu_ip, bpm_ioc_start_cmd)
-    
+
     if args.cfg:
         #Revert original SSHD configuration
         TCPForwardRevert(user, pwd, cpu_ip)
-    
+
     print('')

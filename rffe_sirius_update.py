@@ -7,6 +7,8 @@ import paramiko
 import getpass
 import re
 from sshtunnel import SSHTunnelForwarder
+from queue import Queue
+from threading import Thread
 
 rffe_ips = ['192.168.2.'+str(i) for i in range(201, 214)]
 rffe_tuple_list = [(ip, 6791) for ip in rffe_ips]
@@ -19,6 +21,28 @@ parser.add_argument('-b','--bootloader', action='store_true', help='The firwmare
 parser.add_argument('-c','--cfg', action='store_true', default=False, help='Configure CPU SSH port forwarding')
 parser.add_argument('-v','--version', default='1_3_0', type=str, help='New firmware version tag')
 args = parser.parse_args()
+
+class RffeUpdate(Thread):
+    def __init__(self, queue, firmware, version, bootloader):
+        Thread.__init__(self)
+        self.queue = queue
+        self.firmware = firmware
+        self.version = version
+        self.bootloader = bootloader
+
+    def run(self):
+        port = self.queue.get()
+        try:
+            rf = RFFEControllerBoard('127.0.0.1', port)
+            rf.reprogram(self.firmware, self.version, self.bootloader)
+            print('RFFE (port '+str(port)+') successfully updated!')
+            rf.close()
+        except socket.error as e:
+            print('RFFE (port '+str(port)+') not connected! '+str(e))
+        except:
+            print('RFFE (port '+str(port)+') failed to update!\n')
+        finally:
+            self.queue.task_done()
 
 def get_ssh_connection(ssh_machine, ssh_username, ssh_password):
     """Establishes a ssh connection to execute command.
@@ -99,18 +123,13 @@ for cpu_ip in cpu_list:
             local_bind_addresses=[('127.0.0.1', port) for port in rffe_local_ports]
     ) as tunnel:
         print('Starting firmware upgrades...')
+        queue = Queue()
         for port in rffe_local_ports:
-            try:
-                rf = RFFEControllerBoard('127.0.0.1', port)
-                rf.reprogram(args.firmware, args.version, args.bootloader)
-                print('RFFE (port '+str(port)+') successfully updated!')
-                rf.close()
-            except socket.error as e:
-                print('RFFE (port '+str(port)+') not connected! '+str(e))
-                continue
-            except:
-                print('RFFE (port '+str(port)+') failed to update!\n')
-                continue
+            queue.put(port)
+            updater = RffeUpdate(queue, args.firmware, args.version, args.bootloader)
+            updater.daemon = True
+            updater.start()
+        queue.join()
 
     #Restart BPM IOC service
     run_sudo_command(user, pwd, cpu_ip, bpm_ioc_start_cmd)
